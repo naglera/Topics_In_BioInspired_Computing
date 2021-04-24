@@ -5,6 +5,8 @@ from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score
 from keras.models import Sequential
 from keras.layers import Dense
+from sklearn.metrics import mean_squared_error
+from sklearn.metrics import explained_variance_score
 
 
 # Could make a generalized instance of the Model Keras class for a GNN
@@ -17,59 +19,66 @@ class Organism(Sequential):
         # If no weights provided randomly generate them
         if child_weights is None:
             # Layers are created and randomly generated
-            layer1 = Dense(11, input_shape=(11,), activation='sigmoid')
-            layer2 = Dense(8, activation='sigmoid')
-            layer3 = Dense(5, activation='sigmoid')
-            layer4=Dense(1,activation='softmax')
+            layer1 = Dense(4, input_shape=(4,), activation='sigmoid')
+            layer2 = Dense(4, activation='sigmoid')
+            layer3 = Dense(3, activation='sigmoid')
+            # layer4=Dense(1,activation='softmax')
+
             # Layers are added to the model
             self.add(layer1)
             self.add(layer2)
             self.add(layer3)
-            self.add(layer4)
+
+            # self.add(layer4)
         # If weights are provided set them within the layers
         else:
             # Set weights within the layers
             self.add(
                 Dense(
-                    11,
-                    input_shape=(11,),
+                    4,
+                    input_shape=(4,),
                     activation='sigmoid',
-                    weights=[child_weights[0], np.zeros(11)])
+                    weights=[child_weights[0], np.zeros(4)])
                 )
             self.add(
                 Dense(
-                 8,
+                 4,
                  activation='sigmoid',
-                 weights=[child_weights[1], np.zeros(8)])
+                 weights=[child_weights[1], np.zeros(4)])
             )
             self.add(
                 Dense(
-                 5,
+                 3,
                  activation='sigmoid',
-                 weights=[child_weights[2], np.zeros(5)])
+                 weights=[child_weights[2], np.zeros(3)])
             )
-            self.add(
-                Dense(
-                    1,
-                    activation='softmax',
-                    weights=[child_weights[3], np.zeros(1)])
-            )
+            # self.add(
+            #     Dense(
+            #         1,
+            #         activation='softmax',
+            #         weights=[child_weights[3], np.zeros(1)])
+            # )
 
     # Function for forward propagating a row vector of a matrix
     def forward_propagation(self, X_train, y_train):
         # Forward propagation
-        y_hat = self.predict(X_train.values)
+        y_hat = self.predict(X_train)
+        y_hat=y_hat.argmax(axis=1)
+        # t_train_arr=y_train.to_numpy();
         # Compute fitness score
-        self.fitness = accuracy_score(y_train, y_hat.round())
+        # self.fitness = explained_variance_score(t_train_arr, y_hat)
+        self.fitness = accuracy_score(y_train, y_hat)
 
     # Standard Backpropagation
     def compile_train(self, epochs,X_train,y_train):
+        yn = np.zeros((len(y_train), max(y_train) + 1))
+        yn[np.arange(len(y_train)), y_train] = 1
         self.compile(
                       optimizer='rmsprop',
-                      loss='binary_crossentropy',
+                      loss='categorical_crossentropy',
                       metrics=['accuracy']
                       )
-        self.fit(X_train.values, y_train.values, epochs=epochs)
+        self.fit(X_train, yn, epochs=epochs)
 
 
 # Chance to mutate weights

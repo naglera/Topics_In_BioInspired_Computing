@@ -1,79 +1,63 @@
-import numpy as np
-from sklearn.model_selection import train_test_split
 from Organism import *
 from DataGenerator import DataGenerator
 
+# params
+dataset_name = 'iris.csv'
+class_col = 'variety'
+gen_size = 20
+num_of_gens = 100
+
 
 def main():
-    X_train, y_train, X_test, y_test = DataGenerator()
-    # Create a List of all active GeneticNeuralNetworks
-    networks = []
-    pool = []
-    # Track Generations
-    generation = 0
-    # Initial Population
-    n = 20
+    X_train, Y_train, X_test, Y_test = DataGenerator(dataset_name, class_col)
+    cur_gen = []
+    prev_gen = []
+    n_gen = 0
+    best_org_fit = 0
+    best_org_weights = []
 
-    # Generate n randomly weighted neural networks
-    for i in range(0, n):
-        networks.append(Organism())
+    # initializing generation 0
+    for i in range(0, gen_size):
+        cur_gen.append(Organism())
 
-    # Cache Max Fitness
-    max_fitness = 0
+    # start evolution
+    while n_gen < num_of_gens:
+        cur_best_fit = 0
+        n_gen += 1
 
-    # Max Fitness Weights
-    optimal_weights = []
+        # compute fitness for each organism on current generation
+        for org in cur_gen:
+            org.forward_propagation(X_train, Y_train)
+            prev_gen.append(org)
 
-    # Evolution Loop
-    while max_fitness < .9:
-        # Log the current generation
-        generation += 1
-        print('Generation: ', generation)
+        cur_gen.clear()
+        prev_gen = sorted(prev_gen, key=lambda x: x.fitness)
+        prev_gen.reverse()
+        # save the fitness of the best organism of current generation
+        cur_best_fit = prev_gen[0].fitness
+        # save the fitness and weights of the best organism of until now
+        if cur_best_fit > best_org_fit:
+            best_org_fit = prev_gen[i].fitness
+            best_org_weights.clear()
+            for layer in prev_gen[i].layers:
+                best_org_weights.append(layer.get_weights()[0])
 
-        # Forward propagate the neural networks to compute a fitness score
-        for nn in networks:
-            # Propagate to calculate fitness score
-            nn.forward_propagation(X_train, y_train)
-            # Add to pool after calculating fitness
-            pool.append(nn)
+        print('Generation: %1.f' % n_gen, '\tBest Fitness: %.4f' % cur_best_fit)
 
-        # Clear for propagation of next children
-        networks.clear()
-
-        # Sort based on fitness
-        pool = sorted(pool, key=lambda x: x.fitness)
-        pool.reverse()
-
-        # Find Max Fitness and Log Associated Weights
-        for i in range(0, len(pool)):
-            # If there is a new max fitness among the population
-            if pool[i].fitness > max_fitness:
-                max_fitness = pool[i].fitness
-                print('Max Fitness: ', max_fitness)
-                # Reset optimal_weights
-                optimal_weights = []
-                # Iterate through layers, get weights, and append to optimal
-                for layer in pool[i].layers:
-                    optimal_weights.append(layer.get_weights()[0])
-                print(optimal_weights)
-
-        # Crossover, top 5 randomly select 2 partners for child
+        # crossover
         for i in range(0, 5):
-            for j in range(0, 2):
-                # Create a child and add to networks
-                temp = dynamic_crossover(pool[i], random.choice(pool))
-                # Add to networks to calculate fitness score next iteration
-                networks.append(temp)
+            for j in range(0, 2): #TODO move to Organism class and save the gen_size
+                child = dynamic_crossover(prev_gen[i], random.choice(prev_gen))
+                cur_gen.append(child)
 
-    # Create a Genetic Neural Network with optimal initial weights
-    gnn = Organism(optimal_weights)
-    gnn.compile_train(10, X_train, y_train)
+    best_organism = Organism(best_org_weights)
+    best_organism.compile_train(10, X_train, Y_train)
 
-    # Test the Genetic Neural Network Out of Sample
-    y_hat = gnn.predict(X_test.values)
-    print('Test Accuracy: %.2f' % accuracy_score(y_test, y_hat.round()))
+    # test
+    y_hat = best_organism.predict(X_test)
+    y_hat = y_hat.argmax(axis=1)
+    print('Test Accuracy: %.2f' % accuracy_score(Y_test, y_hat))
 
 
 if __name__ == '__main__':
-    print("runing")
     main()

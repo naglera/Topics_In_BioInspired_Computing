@@ -1,25 +1,25 @@
-import numpy as np
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
 import pandas as pd
 
 
-def DataGenerator():
-    # Read Data
-    data = pd.read_csv('winequality-red.csv')
-    # Create Matrix of Independent Variables
-    X = data.drop(['quality'], axis=1)
-    # Create Vector of Dependent Variable
-    y = data['quality']
-    # Create a Train Test Split for Genetic Optimization
-    X_train, X_test, y_train, y_test = train_test_split(X, y)
-    # Normalizing Data
+def DataGenerator(dataset_name, class_col):
+    df = pd.read_csv(dataset_name)
+
+    # the classes for classification
+    classes = sorted(list(set(df[class_col])))
+
+    # mapping class name to unique number
+    class_number = {y: x for x, y in enumerate(classes)}
+
+    # extracting and splitting data
+    X = df.drop([class_col], axis=1)
+    Y = [class_number[x] for x in df[class_col]]
+    X_train, X_test, Y_train, Y_test = train_test_split(X, Y)
+
+    # normalizing data
     scaler = StandardScaler()
-    X_trainu = scaler.fit_transform(X_train)
+    X_train = scaler.fit_transform(X_train)
     X_test = scaler.transform(X_test)
 
-    # Put all labels between 0-5
-    min_quality = min(np.min(y_train), np.min(y_test))
-    y_train = y_train - min_quality
-    y_test = y_test - min_quality
-    return X_train, y_train, X_test, y_test
+    return X_train, Y_train, X_test, Y_test
