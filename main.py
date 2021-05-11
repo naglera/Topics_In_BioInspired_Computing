@@ -1,15 +1,21 @@
-from Organism import *
+from sklearn.metrics import accuracy_score
+from Genaration import crossover
 from DataGenerator import DataGenerator
+from Organism import Organism
 
 # params
 dataset_name = 'iris.csv'
 class_col = 'variety'
-gen_size = 20
-num_of_gens = 100
+gen_sizes = [20]  # must be even
+nums_of_gens = [1, 30]
+nums_of_parents = [2]  # only 1-3 is supported
+nums_of_bests = [2]  # must be even
+epochs_list = [1, 15, 30]
+
+X_train, Y_train, X_test, Y_test = DataGenerator(dataset_name, class_col)
 
 
-def main():
-    X_train, Y_train, X_test, Y_test = DataGenerator(dataset_name, class_col)
+def evolution(gen_size, num_of_gens, num_of_parents, num_of_bests, epochs, to_print=True):
     cur_gen = []
     prev_gen = []
     n_gen = 0
@@ -22,9 +28,8 @@ def main():
 
     # start evolution
     while n_gen < num_of_gens:
-        cur_best_fit = 0
         n_gen += 1
-
+        prev_gen.clear()
         # compute fitness for each organism on current generation
         for org in cur_gen:
             org.forward_propagation(X_train, Y_train)
@@ -35,28 +40,45 @@ def main():
         prev_gen.reverse()
         # save the fitness of the best organism of current generation
         cur_best_fit = prev_gen[0].fitness
-        # save the fitness and weights of the best organism of until now
+
+        # save the fitness and weights of the best organism until now
         if cur_best_fit > best_org_fit:
-            best_org_fit = prev_gen[i].fitness
+            best_org_fit = cur_best_fit
             best_org_weights.clear()
-            for layer in prev_gen[i].layers:
+            for layer in prev_gen[0].layers:
                 best_org_weights.append(layer.get_weights()[0])
-
-        print('Generation: %1.f' % n_gen, '\tBest Fitness: %.4f' % cur_best_fit)
-
-        # crossover
-        for i in range(0, 5):
-            for j in range(0, 2): #TODO move to Organism class and save the gen_size
-                child = dynamic_crossover(prev_gen[i], random.choice(prev_gen))
-                cur_gen.append(child)
+        if to_print:
+            print('Generation: %1.f' % n_gen, '\tBest Fitness: %.4f' % cur_best_fit)
+        # crossover current generation
+        cur_gen = crossover(gen_size, prev_gen, num_of_bests, num_of_parents)
 
     best_organism = Organism(best_org_weights)
-    best_organism.compile_train(10, X_train, Y_train)
+    best_organism.compile_train(epochs, X_train, Y_train, to_print)
 
     # test
-    y_hat = best_organism.predict(X_test)
-    y_hat = y_hat.argmax(axis=1)
-    print('Test Accuracy: %.2f' % accuracy_score(Y_test, y_hat))
+    Y_hat = best_organism.predict(X_test)
+    Y_hat = Y_hat.argmax(axis=1)
+    return accuracy_score(Y_test, Y_hat)
+
+
+def main():
+    i = 1
+    for gen_size in gen_sizes:
+        for num_of_gens in nums_of_gens:
+            for num_of_parents in nums_of_parents:
+                for num_of_bests in nums_of_bests:
+                    for epochs in epochs_list:
+                        test_acc = evolution(gen_size, num_of_gens, num_of_parents, num_of_bests, epochs, to_print=False)
+                        print('*************************')
+                        print(f'{i} / 243 !!!')
+                        print(f'Generation Size: {gen_size}')
+                        print(f'Number Of Generations: {num_of_gens}')
+                        print(f'Number Of Parents: {num_of_parents}')
+                        print(f'Number Of Bests: {num_of_bests}')
+                        print(f'Epoch: {epochs}')
+                        print('Test Accuracy: %.2f' % test_acc)
+                        print('*************************')
+                        i = i + 1
 
 
 if __name__ == '__main__':
