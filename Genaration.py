@@ -58,8 +58,8 @@ def crossover(gen_size, prev_gen, num_of_bests, num_of_parents=2):
             if num_of_parents == 1:
                 child = dynamic_crossover(prev_gen[i])
             if num_of_parents == 2:
-                child = dynamic_crossover(prev_gen[i],random.choice(prev_gen))
+                child = dynamic_crossover(prev_gen[i], random.choice(prev_gen))
             if num_of_parents == 3:
-                child = dynamic_crossover(prev_gen[i], random.choice(prev_gen),random.choice(prev_gen))
+                child = dynamic_crossover(prev_gen[i], random.choice(prev_gen), random.choice(prev_gen))
             cur_gen.append(child)
     return cur_gen

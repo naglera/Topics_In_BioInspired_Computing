@@ -2,20 +2,24 @@ from sklearn.metrics import accuracy_score
 from Genaration import crossover
 from DataGenerator import DataGenerator
 from Organism import Organism
+import time
 
 # params
 dataset_name = 'iris.csv'
 class_col = 'variety'
-gen_sizes = [20]  # must be even
-nums_of_gens = [1, 30]
-nums_of_parents = [2]  # only 1-3 is supported
-nums_of_bests = [2]  # must be even
-epochs_list = [1, 15, 30]
+gen_sizes = [1, 10, 20, 30]  # must be even
+nums_of_gens = [1, 10, 20, 30]
+nums_of_parents = [1, 2, 3]  # only 1-3 is supported
+nums_of_bests = [0, 2, 4]  # must be even
+epochs_list = [1, 10, 20, 30]
+to_print = True
+repeat = 100
 
 X_train, Y_train, X_test, Y_test = DataGenerator(dataset_name, class_col)
 
 
-def evolution(gen_size, num_of_gens, num_of_parents, num_of_bests, epochs, to_print=True):
+def evolution(gen_size, num_of_gens, num_of_parents, num_of_bests, epochs, to_print):
+    start_time = time.time()
     cur_gen = []
     prev_gen = []
     n_gen = 0
@@ -58,27 +62,31 @@ def evolution(gen_size, num_of_gens, num_of_parents, num_of_bests, epochs, to_pr
     # test
     Y_hat = best_organism.predict(X_test)
     Y_hat = Y_hat.argmax(axis=1)
-    return accuracy_score(Y_test, Y_hat)
+    end_time = time.time()
+    return accuracy_score(Y_test, Y_hat), end_time - start_time
 
 
 def main():
-    i = 1
     for gen_size in gen_sizes:
         for num_of_gens in nums_of_gens:
             for num_of_parents in nums_of_parents:
                 for num_of_bests in nums_of_bests:
                     for epochs in epochs_list:
-                        test_acc = evolution(gen_size, num_of_gens, num_of_parents, num_of_bests, epochs, to_print=False)
                         print('*************************')
-                        print(f'{i} / 243 !!!')
                         print(f'Generation Size: {gen_size}')
                         print(f'Number Of Generations: {num_of_gens}')
                         print(f'Number Of Parents: {num_of_parents}')
                         print(f'Number Of Bests: {num_of_bests}')
                         print(f'Epoch: {epochs}')
-                        print('Test Accuracy: %.2f' % test_acc)
                         print('*************************')
-                        i = i + 1
+                        for i in range(repeat):
+                            test_acc, total_time = evolution(gen_size, num_of_gens, num_of_parents, num_of_bests,
+                                                             epochs,
+                                                             to_print)
+                            print('*************************')
+                            print('Test Accuracy: %.2f' % test_acc)
+                            print('Total Time (seconds): %.2f' % total_time)
+                            print('*************************')
 
 
 if __name__ == '__main__':
